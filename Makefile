@@ -1,8 +1,8 @@
 build:
-	go build -o bin/clean-todo main.go
+	go build -o bin/clean-todo cmd/apiserver/main.go
 	
 run:
-	go run main.go
+	go run cmd/apiserver/main.go
 
 test_all:
 	echo "☹️ tests are not implemented"
