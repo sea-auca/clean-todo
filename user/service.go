@@ -25,6 +25,15 @@ func NewUserService(repo Repository) Service {
 }
 
 func (u userService) Register(ctx context.Context, email, password, fullname string) (*User, error) {
+	user, err := NewUser(email, fullname, password)
+	if err != nil {
+		return user, err
+	}
+
+	if err := u.repo.Create(user); err != nil {
+		return user, err
+	}
+	return user, nil
 	return nil, errors.New("not implemented")
 }
 
