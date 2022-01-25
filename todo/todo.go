@@ -30,17 +30,17 @@ type Todo struct {
 type Repository interface {
 	Create(ctx context.Context, todo *Todo) (*Todo, error)
 	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
-	SearchByText(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
+	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
 	Update(ctx context.Context, todo *Todo) (*Todo, error)
-	Delete(ctx context.Context, todo *Todo) (*Todo, error)
+	Delete(ctx context.Context, todo *Todo) error
 }
 
 type Service interface {
 	Create(ctx context.Context, todo *Todo) (*Todo, error)
 	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
-	SearchByText(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
+	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
 	Update(ctx context.Context, todo *Todo) (*Todo, error)
-	Delete(ctx context.Context, todo *Todo) (*Todo, error)
+	Delete(ctx context.Context, todo *Todo) error
 }
 
 func NewTodo() Todo {
