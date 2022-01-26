@@ -122,3 +122,13 @@ func TestUserEmail(t *testing.T) {
 	assert.Nilf(t, err, "Expected error to be nil")
 	assert.Equalf(t, new_user, usr, "Expected users to be same")
 }
+
+func TestDeleteUser(t *testing.T) {
+	m, us := setupService(t)
+
+	usr := setupUser(us, m)
+	m.EXPECT().Delete(bg, gomock.AssignableToTypeOf(usr)).Times(1)
+
+	err := us.Delete(bg, usr)
+	assert.Nilf(t, err, "Expected error to be nil")
+}

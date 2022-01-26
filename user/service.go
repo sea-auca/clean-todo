@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 )
 
 type Service interface {
@@ -47,7 +46,7 @@ func (u userService) Update(ctx context.Context, user *User, params map[string]i
 }
 
 func (u userService) Delete(ctx context.Context, user *User) error {
-	return errors.New("not implemneted")
+	return u.repo.Delete(ctx, user)
 }
 
 func (u userService) GetByID(ctx context.Context, id int64) (*User, error) {
