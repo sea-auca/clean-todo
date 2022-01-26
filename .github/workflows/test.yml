@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
+
+jobs:
+  test:
+    name: Unit Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: [1.17]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^${{ matrix.go }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - run: go mod tidy && go test -race ./...
+
+  coverage:
+    name: Coverage
+    env:
+      TZ: Asia/Almaty
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - run: go mod tidy && go test -parallel 100 -race -tags=all -cover -covermode=atomic ./...
