@@ -8,12 +8,12 @@ import (
 type Service interface {
 	//CRUD
 	Register(ctx context.Context, email, password, fullname string) (*User, error)
-	Update(ctx context.Context, user *User) error
+	Update(ctx context.Context, user *User, params map[string]interface{}) (*User, error)
 	Delete(ctx context.Context, user *User) error
 
 	//Getteres
-	GetByID(id int64) (*User, error)
-	GetByEmail(email string) (*User, error)
+	GetByID(ctx context.Context, id int64) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
 }
 
 type userService struct {
@@ -30,25 +30,30 @@ func (u userService) Register(ctx context.Context, email, password, fullname str
 		return user, err
 	}
 
-	if err := u.repo.Create(user); err != nil {
+	user, err = u.repo.Create(ctx, user)
+	if err != nil {
 		return user, err
 	}
 	return user, nil
-	return nil, errors.New("not implemented")
 }
 
-func (u userService) Update(ctx context.Context, user *User) error {
-	return errors.New("not implemneted")
+func (u userService) Update(ctx context.Context, user *User, params map[string]interface{}) (*User, error) {
+	err := u.repo.Update(ctx, user, params)
+	if err != nil {
+		return user, err
+	}
+	user, _ = u.GetByID(ctx, user.ID)
+	return user, nil
 }
 
 func (u userService) Delete(ctx context.Context, user *User) error {
 	return errors.New("not implemneted")
 }
 
-func (u userService) GetByID(id int64) (*User, error) {
-	return nil, errors.New("not implemneted")
+func (u userService) GetByID(ctx context.Context, id int64) (*User, error) {
+	return u.repo.GetByID(ctx, id)
 }
 
-func (u userService) GetByEmail(email string) (*User, error) {
-	return nil, errors.New("not implemneted")
+func (u userService) GetByEmail(ctx context.Context, email string) (*User, error) {
+	return u.repo.GetByEmail(ctx, email)
 }
