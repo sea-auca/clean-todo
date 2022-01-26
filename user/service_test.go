@@ -84,7 +84,7 @@ func TestUpdateUserInvalidEmail(t *testing.T) {
 	params := make(map[string]interface{})
 
 	m.EXPECT().Update(bg, gomock.AssignableToTypeOf(user), gomock.AssignableToTypeOf(params)).Times(1).Return(errors.New("new error"))
-	m.EXPECT().GetByID(bg, gomock.Any()).MinTimes(0).MaxTimes(1)
+	m.EXPECT().GetByID(bg, gomock.Any()).Times(0)
 
 	params["Email"] = "new_invalid_email@mail.c"
 	params["Fullname"] = "New eligible fullname"

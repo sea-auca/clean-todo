@@ -29,11 +29,7 @@ func (u userService) Register(ctx context.Context, email, password, fullname str
 		return user, err
 	}
 
-	user, err = u.repo.Create(ctx, user)
-	if err != nil {
-		return user, err
-	}
-	return user, nil
+	return u.repo.Create(ctx, user)
 }
 
 func (u userService) Update(ctx context.Context, user *User, params map[string]interface{}) (*User, error) {
