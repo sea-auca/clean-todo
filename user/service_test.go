@@ -61,20 +61,20 @@ func TestUpdateUserValid(t *testing.T) {
 	params := make(map[string]interface{})
 
 	m.EXPECT().Update(bg, gomock.AssignableToTypeOf(usr), gomock.AssignableToTypeOf(params)).Times(1)
-	params["Email"] = "new_valid_email@mail.com"
-	params["Fullname"] = "New eligible fullname"
+	params["email"] = "new_valid_email@mail.com"
+	params["fullname"] = "New eligible fullname"
 	m.EXPECT().GetByID(bg, gomock.Any()).MinTimes(0).MaxTimes(1).DoAndReturn(func(ctx context.Context, id int64) (*user.User, error) {
 		u := usr
-		u.Email = params["Email"].(string)
-		u.Fullname = params["Fullname"].(string)
+		u.Email = params["email"].(string)
+		u.Fullname = params["fullname"].(string)
 		return u, nil
 	})
 
 	user, err := us.Update(context.Background(), usr, params)
 
 	assert.Nilf(t, err, "Expected error to be nil")
-	assert.Equalf(t, params["Email"], user.Email, "expected email to be %v, got %v", params["Email"], user.Email)
-	assert.Equalf(t, params["Fullname"], user.Fullname, "expected fullname to be %v, got %v", params["Fullname"], user.Fullname)
+	assert.Equalf(t, params["email"], user.Email, "expected email to be %v, got %v", params["email"], user.Email)
+	assert.Equalf(t, params["fullname"], user.Fullname, "expected fullname to be %v, got %v", params["fullname"], user.Fullname)
 }
 
 func TestUpdateUserInvalidEmail(t *testing.T) {
@@ -84,10 +84,9 @@ func TestUpdateUserInvalidEmail(t *testing.T) {
 	params := make(map[string]interface{})
 
 	m.EXPECT().Update(bg, gomock.AssignableToTypeOf(user), gomock.AssignableToTypeOf(params)).Times(1).Return(errors.New("new error"))
-	m.EXPECT().GetByID(bg, gomock.Any()).Times(0)
 
-	params["Email"] = "new_invalid_email@mail.c"
-	params["Fullname"] = "New eligible fullname"
+	params["email"] = "new_invalid_email@mail.c"
+	params["fullname"] = "New eligible fullname"
 
 	new_user, err := us.Update(context.Background(), user, params)
 

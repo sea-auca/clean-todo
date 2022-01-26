@@ -27,10 +27,7 @@ var ErrInvalidPassword = errors.New("invalid password format")
 func NewUser(email, fullname, password string) (*User, error) {
 	user := User{Email: email, Fullname: fullname}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		return &user, err
-	}
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
 
 	user.Hash = string(hash)
 	user.CreatedAt = time.Now()

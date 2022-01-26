@@ -30,9 +30,21 @@ func TestCreateUser(t *testing.T) {
 			err:      user.ErrInvalidEmail,
 		},
 		{
-			desc:     "Invalid password",
+			desc:     "Invalid password -- too short",
 			email:    "valid@mail.com",
 			password: "pass",
+			err:      user.ErrInvalidPassword,
+		},
+		{
+			desc:     "Invalid password -- no capital letter",
+			email:    "valid@mail.com",
+			password: "password",
+			err:      user.ErrInvalidPassword,
+		},
+		{
+			desc:     "Invalid password -- no numerical",
+			email:    "valid@mail.com",
+			password: "Password",
 			err:      user.ErrInvalidPassword,
 		},
 	}
@@ -70,6 +82,9 @@ func TestIsValidUser(t *testing.T) {
 	invalidCreadtedAtUser := validUser
 	invalidCreadtedAtUser.CreatedAt = time.Time{}
 
+	invalidMalformedUpdateTime := validUser
+	invalidMalformedUpdateTime.UpdatedAt = time.Time{}
+
 	testCases := []struct {
 		desc   string
 		user   user.User
@@ -98,6 +113,11 @@ func TestIsValidUser(t *testing.T) {
 		{
 			desc:   "user with invalid createdAt",
 			user:   invalidCreadtedAtUser,
+			result: false,
+		},
+		{
+			desc:   "malformed UpdatedAt field",
+			user:   invalidMalformedUpdateTime,
 			result: false,
 		},
 	}
