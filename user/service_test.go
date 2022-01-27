@@ -2,6 +2,8 @@ package user_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"errors"
 	"testing"
 
@@ -14,7 +16,8 @@ import (
 func setupService(t *testing.T) (m *mocks.MockRepository, us user.Service) {
 	ctrl := gomock.NewController(t)
 	m = mocks.NewMockRepository(ctrl)
-	us = user.NewUserService(m)
+	private, _ := rsa.GenerateKey(rand.Reader, 4096)
+	us = user.NewUserService(m, private)
 	return
 }
 
@@ -130,4 +133,87 @@ func TestDeleteUser(t *testing.T) {
 
 	err := us.Delete(bg, usr)
 	assert.Nilf(t, err, "Expected error to be nil")
+}
+
+func TestAuthenticate(t *testing.T) {
+	m, us := setupService(t)
+
+	usr := setupUser(us, m)
+
+	m.EXPECT().GetByEmail(gomock.Any(), gomock.Eq(usr.Email)).AnyTimes().Return(usr, nil)
+	m.EXPECT().GetByEmail(gomock.All(), gomock.Not(gomock.Eq(usr.Email))).AnyTimes().Return(&user.User{}, errors.New("not found"))
+
+	testCases := []struct {
+		desc     string
+		email    string
+		password string
+		isToken  bool
+		err      error
+	}{
+		{
+			desc:     "valid email and password create token and no error",
+			email:    usr.Email,
+			password: "Password_1",
+			isToken:  true,
+		},
+		{
+			desc:     "invalid email returns not found error",
+			email:    "invalid_mail@mail.com",
+			password: "Password_1",
+			isToken:  false,
+			err:      user.ErrUserNotFoundEmail,
+		},
+		{
+			desc:     "valid email but invalid  password does not create token and gives error",
+			email:    usr.Email,
+			password: "Password",
+			isToken:  false,
+			err:      user.ErrInvalidCredentials,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			token, err := us.Authenticate(context.TODO(), tC.email, tC.password)
+			assert.Equal(t, tC.err, err)
+			if tC.isToken {
+				assert.NotZero(t, token)
+			}
+		})
+	}
+}
+
+func TestAuthorize(t *testing.T) {
+	m, us := setupService(t)
+	usr := setupUser(us, m)
+	m.EXPECT().GetByEmail(gomock.Any(), gomock.Eq(usr.Email)).AnyTimes().Return(usr, nil)
+	m.EXPECT().GetByID(gomock.Any(), gomock.Eq(usr.ID)).AnyTimes().Return(usr, nil)
+	valid_token, _ := us.Authenticate(context.TODO(), usr.Email, "Password_1")
+
+	testCases := []struct {
+		desc   string
+		token  string
+		isUser bool
+		err    error
+	}{
+		{
+			desc:   "valid token returns an authorized user",
+			token:  valid_token,
+			isUser: true,
+		},
+		{
+			desc:   "invalid token is not accepted",
+			token:  "",
+			isUser: false,
+			err:    user.ErrInvalidToken,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			user, err := us.Authorize(context.TODO(), tC.token)
+			assert.Equal(t, tC.err, err)
+			if tC.isUser {
+				assert.NotNil(t, user)
+			}
+		})
+	}
 }
