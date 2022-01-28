@@ -1,315 +1,398 @@
-package todo
+package todo_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/sea-auca/clean-todo/todo"
+	"github.com/sea-auca/clean-todo/todo/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreate(t *testing.T) {
-	defaultTodo := Todo{
-		Name:        "hello",
-		Description: "testing",
-	}
-	defaultExpected := Todo{
-		Name:        "hello",
-		Description: "testing",
-	}
-
-	noName := defaultTodo
-	noName.Name = ""
-	noNameExpected := noName
-
-	noDescription := defaultTodo
-	noDescription.Description = ""
-	noDescriptionExpected := noDescription
-
-	testCases := []struct {
-		desc string
-		ctx  context.Context
-		*Todo
-		err    error
-		expect *Todo
-	}{
-		{
-			desc:   "usual",
-			ctx:    context.Background(),
-			Todo:   &defaultTodo,
-			err:    nil,
-			expect: &defaultExpected,
-		},
-		{
-			desc:   "no name",
-			ctx:    context.Background(),
-			Todo:   &noName,
-			err:    nil,
-			expect: &noNameExpected,
-		},
-		{
-			desc:   "no description",
-			ctx:    context.Background(),
-			Todo:   &noDescription,
-			err:    nil,
-			expect: &noDescriptionExpected,
-		},
-	}
-
-	mockRepo := NewMockRepository()
-	service := NewService(mockRepo)
-
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			todo, err := service.Create(tC.ctx, tC.Todo)
-			assert.Equalf(t, tC.err, err, "Could not create todo on %s. Due to error: %v. Result is: %v", tC.desc, tC.err, todo)
-			assert.Equalf(t, tC.expect, todo, "Input into Create was mutated. Result: %v. Wanted: %v", todo, tC.expect)
-		})
-	}
+func setupService(t *testing.T) (*mocks.MockRepository, todo.Service) {
+	ctrl := gomock.NewController(t)
+	m := mocks.NewMockRepository(ctrl)
+	todo := todo.NewService(m)
+	return m, todo
 }
 
-func TestListByUserID(t *testing.T) {
-	var defaultExpected []*Todo = nil
+var bg = context.Background()
 
+func TestCreate(t *testing.T) {
 	type input struct {
 		userID int64
 		limit  int
 		offset int
 	}
+	type wantedResult struct {
+		err   error
+		isnil bool
+	}
+
 	testCases := []struct {
-		desc   string
-		ctx    context.Context
-		input  input
-		err    error
-		expect []*Todo
+		desc         string
+		input        input
+		wantedResult wantedResult
 	}{
 		{
-			desc: "usual",
-			ctx:  context.Background(),
+			desc: "default",
 			input: input{
 				userID: 1,
 				limit:  10,
 				offset: 0,
 			},
-			err:    nil,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
 		},
 		{
 			desc: "negative userID",
-			ctx:  context.Background(),
 			input: input{
 				userID: -1,
 				limit:  10,
 				offset: 0,
 			},
-			err:    ErrNegativeUserID,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeUserID,
+				isnil: true,
+			},
 		},
 		{
-			desc: "nil userID",
-			ctx:  context.Background(),
+			desc: "-1, -1 on limit and offset",
 			input: input{
-				userID: 0,
-				limit:  10,
+				userID: 1,
+				limit:  -1,
+				offset: -1,
+			},
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
+		},
+		{
+			desc: "negative limit",
+			input: input{
+				userID: 1,
+				limit:  -2,
 				offset: 0,
 			},
-			err:    ErrNullUserID,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeLimit,
+				isnil: true,
+			},
+		},
+		{
+			desc: "negative offset",
+			input: input{
+				userID: 1,
+				limit:  0,
+				offset: -2,
+			},
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeOffset,
+				isnil: true,
+			},
 		},
 	}
 
-	mockRepo := NewMockRepository()
-	service := NewService(mockRepo)
+	m, todoService := setupService(t)
+	m.EXPECT().ListByUserID(bg, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, userID int64, limit, offset int) ([]*todo.Todo, error) {
+		var todos []*todo.Todo
+		todos = append(todos, &todo.Todo{
+			ID:          1,
+			Name:        "test",
+			Description: "test",
+		})
+		return todos, nil
+	})
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			todos, err := service.ListByUserID(tC.ctx, tC.input.userID, tC.input.limit, tC.input.offset)
-			assert.Equalf(t, tC.err, err, "Could not list todos on %s. Due to error: %v. Result is: %v", tC.desc, tC.err, todos)
-			assert.Equalf(t, tC.expect, todos, "Input into ListByUserID was mutated. Result: %v. Wanted: %v", todos, tC.expect)
+			todos, err := todoService.ListByUserID(
+				bg,
+				tC.input.userID,
+				tC.input.limit,
+				tC.input.offset,
+			)
+
+			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
+			if tC.wantedResult.isnil {
+				assert.Nilf(t, todos, "Expected todos to be nil")
+				return
+			}
+			if !tC.wantedResult.isnil {
+				assert.NotNilf(t, todos, "Epected todos not to be nil")
+			}
+			// TODO: add checks for user_id
 		})
 	}
 }
 
 func TestSearchByText(t *testing.T) {
-	var defaultExpected []*Todo = nil
-
 	type input struct {
 		text   string
 		userID int64
 		limit  int
 		offset int
 	}
+	type wantedResult struct {
+		err   error
+		isnil bool
+	}
+
 	testCases := []struct {
-		desc   string
-		ctx    context.Context
-		input  input
-		err    error
-		expect []*Todo
+		desc         string
+		input        input
+		wantedResult wantedResult
 	}{
 		{
-			desc: "usual",
-			ctx:  context.Background(),
+			desc: "default",
 			input: input{
-				text:   "hello",
+				text:   "text",
 				userID: 1,
 				limit:  10,
 				offset: 0,
 			},
-			err:    nil,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
+		},
+		{
+			desc: "empty text",
+			input: input{
+				text:   "",
+				userID: 1,
+				limit:  10,
+				offset: 0,
+			},
+			wantedResult: wantedResult{
+				err:   todo.ErrEmptyText,
+				isnil: true,
+			},
 		},
 		{
 			desc: "negative userID",
-			ctx:  context.Background(),
 			input: input{
-				text:   "hello",
+				text:   "text",
 				userID: -1,
 				limit:  10,
 				offset: 0,
 			},
-			err:    ErrNegativeUserID,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeUserID,
+				isnil: true,
+			},
 		},
 		{
-			desc: "nil userID",
-			ctx:  context.Background(),
+			desc: "-1, -1 on limit and offset",
 			input: input{
-				text:   "hello",
-				userID: 0,
-				limit:  10,
+				text:   "text",
+				userID: 1,
+				limit:  -1,
+				offset: -1,
+			},
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
+		},
+		{
+			desc: "negative limit",
+			input: input{
+				text:   "text",
+				userID: 1,
+				limit:  -2,
 				offset: 0,
 			},
-			err:    ErrNullUserID,
-			expect: defaultExpected,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeLimit,
+				isnil: true,
+			},
+		},
+		{
+			desc: "negative offset",
+			input: input{
+				text:   "text",
+				userID: 1,
+				limit:  0,
+				offset: -2,
+			},
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeOffset,
+				isnil: true,
+			},
 		},
 	}
 
-	mockRepo := NewMockRepository()
-	service := NewService(mockRepo)
+	m, todoService := setupService(t)
+	m.EXPECT().SearchByText(bg, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, text string, userID int64, limit, offset int) ([]*todo.Todo, error) {
+		var todos []*todo.Todo
+		todos = append(todos, &todo.Todo{
+			ID:          1,
+			Name:        "test",
+			Description: "test",
+		})
+		return todos, nil
+	})
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			todos, err := service.SearchByText(tC.ctx, tC.input.text, tC.input.userID, tC.input.limit, tC.input.offset)
-			assert.Equalf(t, tC.err, err, "Could not list todos on %s. Due to error: %v. Result is: %v", tC.desc, tC.err, todos)
-			assert.Equalf(t, tC.expect, todos, "Input into ListByUserID was mutated. Result: %v. Wanted: %v", todos, tC.expect)
+			todos, err := todoService.SearchByText(
+				bg,
+				tC.input.text,
+				tC.input.userID,
+				tC.input.limit,
+				tC.input.offset,
+			)
+
+			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
+			if tC.wantedResult.isnil {
+				assert.Nilf(t, todos, "Expected todos to be nil")
+				return
+			}
+			if !tC.wantedResult.isnil {
+				assert.NotNilf(t, todos, "Epected todos not to be nil")
+			}
+			// TODO: add checks for user_id
 		})
 	}
 }
 
 func TestUpdate(t *testing.T) {
-	defaultTodo := Todo{
-		Name:        "hello",
-		Description: "testing",
-	}
-	defaultExpected := Todo{
-		Name:        "hello",
-		Description: "testing",
+	defaultInput := todo.Todo{
+		ID:          1,
+		Name:        "test",
+		Description: "test",
 	}
 
-	noName := defaultTodo
-	noName.Name = ""
-	noNameExpected := noName
+	nullIDInput := defaultInput
+	nullIDInput.ID = 0
 
-	noDescription := defaultTodo
-	noDescription.Description = ""
-	noDescriptionExpected := noDescription
+	emptyNameInput := defaultInput
+	emptyNameInput.Name = ""
+
+	emptyDescriptionInput := defaultInput
+	emptyDescriptionInput.Description = ""
+
+	type wantedResult struct {
+		err   error
+		isnil bool
+	}
 
 	testCases := []struct {
-		desc string
-		ctx  context.Context
-		*Todo
-		err    error
-		expect *Todo
+		desc         string
+		input        *todo.Todo
+		wantedResult wantedResult
 	}{
 		{
-			desc:   "usual",
-			ctx:    context.Background(),
-			Todo:   &defaultTodo,
-			err:    nil,
-			expect: &defaultExpected,
+			desc:  "default",
+			input: &defaultInput,
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
 		},
 		{
-			desc:   "no name",
-			ctx:    context.Background(),
-			Todo:   &noName,
-			err:    nil,
-			expect: &noNameExpected,
+			desc:  "null todo.ID",
+			input: &nullIDInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeID,
+				isnil: true,
+			},
 		},
 		{
-			desc:   "no description",
-			ctx:    context.Background(),
-			Todo:   &noDescription,
-			err:    nil,
-			expect: &noDescriptionExpected,
+			desc:  "empty name",
+			input: &emptyNameInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrEmptyName,
+				isnil: true,
+			},
+		},
+		{
+			desc:  "empty description",
+			input: &emptyDescriptionInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrEmptyDescription,
+				isnil: true,
+			},
 		},
 	}
 
-	mockRepo := NewMockRepository()
-	service := NewService(mockRepo)
+	m, todoService := setupService(t)
+	m.EXPECT().Update(bg, gomock.AssignableToTypeOf(&defaultInput)).AnyTimes().DoAndReturn(func(ctx context.Context, t *todo.Todo) (*todo.Todo, error) {
+		return t, nil
+	})
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			todo, err := service.Update(tC.ctx, tC.Todo)
-			assert.Equalf(t, tC.err, err, "Could not Update todo on %s. Due to error: %v. Result is: %v", tC.desc, tC.err, todo)
-			assert.Equalf(t, tC.expect, todo, "Input into Update was mutated. Result: %v. Wanted: %v", todo, tC.expect)
+			todos, err := todoService.Update(
+				bg,
+				tC.input,
+			)
+
+			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
+			if tC.wantedResult.isnil {
+				assert.Nilf(t, todos, "Expected todos to be nil")
+				return
+			}
+			if !tC.wantedResult.isnil {
+				assert.NotNilf(t, todos, "Epected todos not to be nil")
+			}
+			// TODO: add checks for user_id
 		})
 	}
 }
 
 func TestDelete(t *testing.T) {
-	defaultTodo := Todo{
-		Name:        "hello",
-		Description: "testing",
-	}
-	defaultExpected := Todo{
-		Name:        "hello",
-		Description: "testing",
+	defaultInput := todo.Todo{
+		ID:          1,
+		Name:        "test",
+		Description: "test",
 	}
 
-	noName := defaultTodo
-	noName.Name = ""
-	noNameExpected := noName
+	nullIDInput := defaultInput
+	nullIDInput.ID = 0
 
-	noDescription := defaultTodo
-	noDescription.Description = ""
-	noDescriptionExpected := noDescription
+	emptyNameInput := defaultInput
+	emptyNameInput.Name = ""
+
+	emptyDescriptionInput := defaultInput
+	emptyDescriptionInput.Description = ""
 
 	testCases := []struct {
-		desc string
-		ctx  context.Context
-		*Todo
-		err    error
-		expect *Todo
+		desc  string
+		input *todo.Todo
+		err   error
 	}{
 		{
-			desc:   "usual",
-			ctx:    context.Background(),
-			Todo:   &defaultTodo,
-			err:    nil,
-			expect: &defaultExpected,
+			desc:  "default",
+			input: &defaultInput,
+			err:   nil,
 		},
 		{
-			desc:   "no name",
-			ctx:    context.Background(),
-			Todo:   &noName,
-			err:    nil,
-			expect: &noNameExpected,
-		},
-		{
-			desc:   "no description",
-			ctx:    context.Background(),
-			Todo:   &noDescription,
-			err:    nil,
-			expect: &noDescriptionExpected,
+			desc:  "null todo.ID",
+			input: &nullIDInput,
+			err:   todo.ErrNegativeID,
 		},
 	}
 
-	mockRepo := NewMockRepository()
-	service := NewService(mockRepo)
+	m, todoService := setupService(t)
+	m.EXPECT().Delete(bg, gomock.AssignableToTypeOf(&defaultInput)).AnyTimes().DoAndReturn(func(ctx context.Context, t *todo.Todo) error {
+		return nil
+	})
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			err := service.Delete(tC.ctx, tC.Todo)
-			assert.Equalf(t, tC.err, err, "Could not Delete todo on %s. Due to error: %v", tC.desc, tC.err)
+			err := todoService.Delete(
+				bg,
+				tC.input,
+			)
+
+			assert.Equalf(t, tC.err, err, "Expected a different error")
+			// TODO: add checks for user_id
 		})
 	}
 }
