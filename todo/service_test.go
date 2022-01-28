@@ -20,6 +20,91 @@ func setupService(t *testing.T) (*mocks.MockRepository, todo.Service) {
 var bg = context.Background()
 
 func TestCreate(t *testing.T) {
+	defaultInput := todo.Todo{
+		ID:          1,
+		Name:        "test",
+		Description: "test",
+	}
+
+	nullIDInput := defaultInput
+	nullIDInput.ID = 0
+
+	emptyNameInput := defaultInput
+	emptyNameInput.Name = ""
+
+	emptyDescriptionInput := defaultInput
+	emptyDescriptionInput.Description = ""
+
+	type wantedResult struct {
+		err   error
+		isnil bool
+	}
+
+	testCases := []struct {
+		desc         string
+		input        *todo.Todo
+		wantedResult wantedResult
+	}{
+		{
+			desc:  "default",
+			input: &defaultInput,
+			wantedResult: wantedResult{
+				err:   nil,
+				isnil: false,
+			},
+		},
+		{
+			desc:  "null todo.ID",
+			input: &nullIDInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrNegativeID,
+				isnil: true,
+			},
+		},
+		{
+			desc:  "empty name",
+			input: &emptyNameInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrEmptyName,
+				isnil: true,
+			},
+		},
+		{
+			desc:  "empty description",
+			input: &emptyDescriptionInput,
+			wantedResult: wantedResult{
+				err:   todo.ErrEmptyDescription,
+				isnil: true,
+			},
+		},
+	}
+
+	m, todoService := setupService(t)
+	m.EXPECT().Create(bg, gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, tt *todo.Todo) (*todo.Todo, error) {
+		return tt, nil
+	})
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			todos, err := todoService.Create(
+				bg,
+				tC.input,
+			)
+
+			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
+			if tC.wantedResult.isnil {
+				assert.Nilf(t, todos, "Expected todos to be nil")
+				return
+			}
+			if !tC.wantedResult.isnil {
+				assert.NotNilf(t, todos, "Epected todos not to be nil")
+			}
+			// TODO: add checks for user_id
+		})
+	}
+}
+
+func TestListByUserID(t *testing.T) {
 	type input struct {
 		userID int64
 		limit  int
