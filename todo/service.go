@@ -2,8 +2,24 @@ package todo
 
 import (
 	"context"
-	"fmt"
+	"errors"
 )
+
+// error bellow are specific only to
+// the methods in this file
+var (
+	ErrNegativeLimit  = errors.New("limit is less than -1")
+	ErrNegativeOffset = errors.New("offset is less than -1")
+	ErrEmptyText      = errors.New("text is empty")
+)
+
+type Service interface {
+	Create(ctx context.Context, todo *Todo) (*Todo, error)
+	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
+	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
+	Update(ctx context.Context, todo *Todo) (*Todo, error)
+	Delete(ctx context.Context, todo *Todo) error
+}
 
 type service struct {
 	repo Repository
@@ -17,65 +33,61 @@ func NewService(repo Repository) Service {
 
 func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	// TODO: check for userID
-	newTodo, err := s.repo.Create(ctx, todo)
-	if err != nil {
-		return nil, err
-	}
-	return newTodo, nil
+	return s.repo.Create(ctx, todo)
 }
 
 func (s *service) ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error) {
-	if userID < 0 {
+	if userID < 1 {
 		return nil, ErrNegativeUserID
 	}
-	if userID == 0 {
-		return nil, ErrNullUserID
+	// we check for less than -1
+	// because -1 stands for negating
+	// limit or offset
+	if offset < -1 {
+		return nil, ErrNegativeOffset
 	}
-
-	return nil, nil
+	if limit < -1 {
+		return nil, ErrNegativeLimit
+	}
+	return s.repo.ListByUserID(ctx, userID, limit, offset)
 }
 
 func (s *service) SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error) {
-	if userID < 0 {
-		return nil, ErrNegativeUserID
+	if text == "" {
+		return nil, ErrEmptyText
 	}
-	if userID == 0 {
-		return nil, ErrNullUserID
+	if userID < 1 {
+		return nil, ErrNegativeUserID
 	}
 
 	// we check for less than -1
 	// because -1 stands for negating
 	// limit or offset
-	if offset < -1 || limit < -1 {
-		return nil, fmt.Errorf("limit and offset cannot be less than -1")
+	if offset < -1 {
+		return nil, ErrNegativeOffset
 	}
-	todos, err := s.repo.SearchByText(ctx, text, userID, limit, offset)
-	if err != nil {
-		return nil, err
+	if limit < -1 {
+		return nil, ErrNegativeLimit
 	}
-	return todos, nil
+	return s.repo.SearchByText(ctx, text, userID, limit, offset)
 }
 
 func (s *service) Update(ctx context.Context, todo *Todo) (*Todo, error) {
-	if todo.ID < 0 {
+	if todo.ID < 1 {
 		return nil, ErrNegativeID
 	}
-	if todo.ID == 0 {
-		return nil, ErrNullID
+	if todo.Name == "" {
+		return nil, ErrEmptyName
 	}
-	newtodo, err := s.repo.Update(ctx, todo)
-	if err != nil {
-		return nil, err
+	if todo.Description == "" {
+		return nil, ErrEmptyDescription
 	}
-	return newtodo, nil
+	return s.repo.Update(ctx, todo)
 }
 
 func (s *service) Delete(ctx context.Context, todo *Todo) error {
-	if todo.ID < 0 {
+	if todo.ID < 1 {
 		return ErrNegativeID
-	}
-	if todo.ID == 0 {
-		return ErrNullID
 	}
 	return s.repo.Delete(ctx, todo)
 }
