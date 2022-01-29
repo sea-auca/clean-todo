@@ -32,9 +32,6 @@ func TestCreate(t *testing.T) {
 	emptyNameInput := defaultInput
 	emptyNameInput.Name = ""
 
-	emptyDescriptionInput := defaultInput
-	emptyDescriptionInput.Description = ""
-
 	type wantedResult struct {
 		err   error
 		isnil bool
@@ -66,14 +63,6 @@ func TestCreate(t *testing.T) {
 			input: &emptyNameInput,
 			wantedResult: wantedResult{
 				err:   todo.ErrEmptyName,
-				isnil: true,
-			},
-		},
-		{
-			desc:  "empty description",
-			input: &emptyDescriptionInput,
-			wantedResult: wantedResult{
-				err:   todo.ErrEmptyDescription,
 				isnil: true,
 			},
 		},

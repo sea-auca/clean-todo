@@ -35,11 +35,8 @@ func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	if todo.ID < 1 {
 		return nil, ErrNegativeID
 	}
-	if todo.Name == "" {
-		return nil, ErrEmptyName
-	}
-	if todo.Description == "" {
-		return nil, ErrEmptyDescription
+	if err := todo.IsValid(); err != nil {
+		return nil, err
 	}
 	// TODO: check for userID
 	return s.repo.Create(ctx, todo)
