@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/sea-auca/clean-todo/user"
 )
 
 type Repository interface {
@@ -26,10 +27,10 @@ func CreateNewRepo(r pgx.Conn) Repository {
 func (r *repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	// TODO: add user_id to insert operation
 	rows, err := r.r.Query(ctx, `
-	INSERT INTO todos (name, description, due_to, is_done, created_at, updatet_at)
+	INSERT INTO todos (name, description, author_id, due_to, is_done, created_at, updatet_at)
 	VALUES($1, $2, $3, $4, $5, $6)
 	RETURNING id, name, description, due_to, is_done, created_at, updatet_at;
-	`, todo.Name, todo.Description, todo.DueTo, todo.IsDone, todo.CreatedAt, todo.UpdatedAt)
+	`, todo.Name, todo.Description, todo.Author.ID, todo.DueTo, todo.IsDone, todo.CreatedAt, todo.UpdatedAt)
 
 	if err != nil {
 		return nil, err
@@ -50,6 +51,7 @@ func (r *repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 			return nil, err
 		}
 	}
+	newTodo.Author = todo.Author
 	return &newTodo, nil
 }
 
@@ -137,6 +139,7 @@ func (r *repository) SearchByText(ctx context.Context, text string, userID int64
 			IsDone:      isDone,
 			CreatedAt:   createdAt,
 			UpdatedAt:   updatedAt,
+			Author:      &user.User{ID: userID},
 		})
 	}
 	return todos, nil
@@ -147,8 +150,8 @@ func (r *repository) Update(ctx context.Context, todo *Todo) (*Todo, error) {
 	err := r.r.QueryRow(ctx, `
 	UPDATE todos
 	SET name=$1, description=$2, due_to=$3, is_done=$4, created_at=$5, updated_at=$6
-	WHERE user_id = $7;
-	`).Scan(
+	WHERE id = $7;
+	`, todo.Name, todo.Description, todo.DueTo, todo.IsDone, todo.CreatedAt, todo.UpdatedAt).Scan(
 		&newTodo.Name,
 		&newTodo.Description,
 		&newTodo.DueTo,
@@ -156,15 +159,14 @@ func (r *repository) Update(ctx context.Context, todo *Todo) (*Todo, error) {
 		&newTodo.CreatedAt,
 		&newTodo.UpdatedAt,
 	)
+	newTodo.Author = todo.Author
 	return &newTodo, err
 }
 
 func (r *repository) Delete(ctx context.Context, todo *Todo) error {
-	// TODO: currently there is no user_id in todo object ;(
 	_, err := r.r.Query(ctx, `
 	DELETE FROM todos
-	WHERE user_id = $1
-	AND id = $2;
-	`, /* TODO: here should be a todo.User.ID */ todo.ID)
+	WHERE id = $2;
+	`, todo.ID)
 	return err
 }
