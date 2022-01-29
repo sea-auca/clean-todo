@@ -49,14 +49,11 @@ func (s *service) ListByUserID(ctx context.Context, userID int64, limit, offset 
 	if userID < 1 {
 		return nil, ErrNegativeUserID
 	}
-	// we check for less than -1
-	// because -1 stands for negating
-	// limit or offset
-	if offset < -1 {
-		return nil, ErrNegativeOffset
-	}
-	if limit < -1 {
+	if limit < 0 {
 		return nil, ErrNegativeLimit
+	}
+	if offset < 0 {
+		return nil, ErrNegativeOffset
 	}
 	return s.repo.ListByUserID(ctx, userID, limit, offset)
 }
@@ -68,15 +65,11 @@ func (s *service) SearchByText(ctx context.Context, text string, userID int64, l
 	if userID < 1 {
 		return nil, ErrNegativeUserID
 	}
-
-	// we check for less than -1
-	// because -1 stands for negating
-	// limit or offset
-	if offset < -1 {
-		return nil, ErrNegativeOffset
-	}
-	if limit < -1 {
+	if limit < 0 {
 		return nil, ErrNegativeLimit
+	}
+	if offset < 0 {
+		return nil, ErrNegativeOffset
 	}
 	return s.repo.SearchByText(ctx, text, userID, limit, offset)
 }

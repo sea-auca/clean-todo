@@ -152,8 +152,8 @@ func TestListByUserID(t *testing.T) {
 				offset: -1,
 			},
 			wantedResult: wantedResult{
-				err:   nil,
-				isnil: false,
+				err:   todo.ErrNegativeLimit,
+				isnil: true,
 			},
 		},
 		{
@@ -280,8 +280,8 @@ func TestSearchByText(t *testing.T) {
 				offset: -1,
 			},
 			wantedResult: wantedResult{
-				err:   nil,
-				isnil: false,
+				err:   todo.ErrNegativeLimit,
+				isnil: true,
 			},
 		},
 		{
