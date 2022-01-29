@@ -16,6 +16,9 @@ var (
 
 	ErrEmptyName        = errors.New("todo.name is empty")
 	ErrEmptyDescription = errors.New("todo.description is empty")
+
+	ErrIncorrectUpdatedAt = errors.New("updatedAt is before createdAt")
+	ErrIncorrectDueTo     = errors.New("dueTo is before createdAt")
 )
 
 type Todo struct {
@@ -24,7 +27,8 @@ type Todo struct {
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
-	IsDueTo     time.Time `json:"IsDueTo"`
+	DueTo       time.Time `json:"DueTo"`
+	IsDone      bool      `json:"IsDone"`
 	// TODO: Todo needs a field for User
 	// User
 }
@@ -33,6 +37,15 @@ func NewTodo() Todo {
 	return Todo{}
 }
 
-func (t *Todo) IsValid() bool {
-	return true
+func (t *Todo) IsValid() error {
+	if t.UpdatedAt.Before(t.CreatedAt) {
+		return ErrIncorrectUpdatedAt
+	}
+	if t.Name == "" {
+		return ErrEmptyName
+	}
+	if t.DueTo.Before(t.CreatedAt) {
+		return ErrIncorrectDueTo
+	}
+	return nil
 }
