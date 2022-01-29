@@ -25,7 +25,6 @@ func CreateNewRepo(r pgx.Conn) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, todo *Todo) (*Todo, error) {
-	// TODO: add user_id to insert operation
 	rows, err := r.r.Query(ctx, `
 	INSERT INTO todos (name, description, author_id, due_to, is_done, created_at, updatet_at)
 	VALUES($1, $2, $3, $4, $5, $6)

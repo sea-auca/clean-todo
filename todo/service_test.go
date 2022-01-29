@@ -99,7 +99,6 @@ func TestCreate(t *testing.T) {
 			if !tC.wantedResult.isnil {
 				assert.NotNilf(t, todos, "Epected todos not to be nil")
 			}
-			// TODO: add checks for user_id
 		})
 	}
 }
@@ -210,7 +209,6 @@ func TestListByUserID(t *testing.T) {
 			if !tC.wantedResult.isnil {
 				assert.NotNilf(t, todos, "Epected todos not to be nil")
 			}
-			// TODO: add checks for user_id
 		})
 	}
 }
@@ -341,7 +339,6 @@ func TestSearchByText(t *testing.T) {
 			if !tC.wantedResult.isnil {
 				assert.NotNilf(t, todos, "Epected todos not to be nil")
 			}
-			// TODO: add checks for user_id
 		})
 	}
 }
@@ -426,7 +423,6 @@ func TestUpdate(t *testing.T) {
 			if !tC.wantedResult.isnil {
 				assert.NotNilf(t, todos, "Epected todos not to be nil")
 			}
-			// TODO: add checks for user_id
 		})
 	}
 }
@@ -477,7 +473,6 @@ func TestDelete(t *testing.T) {
 			)
 
 			assert.Equalf(t, tC.err, err, "Expected a different error")
-			// TODO: add checks for user_id
 		})
 	}
 }

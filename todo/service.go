@@ -46,7 +46,6 @@ func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	if !user.IsValidUser(todo.Author) {
 		return nil, ErrInvalidAuthor
 	}
-	// TODO: check for userID
 	return s.repo.Create(ctx, todo)
 }
 
