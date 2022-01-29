@@ -40,6 +40,9 @@ func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	if err := todo.IsValid(); err != nil {
 		return nil, err
 	}
+	if todo.Author == nil {
+		return nil, ErrInvalidAuthor
+	}
 	if !user.IsValidUser(todo.Author) {
 		return nil, ErrInvalidAuthor
 	}

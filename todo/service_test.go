@@ -3,10 +3,12 @@ package todo_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/sea-auca/clean-todo/todo"
 	"github.com/sea-auca/clean-todo/todo/mocks"
+	"github.com/sea-auca/clean-todo/user"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +26,15 @@ func TestCreate(t *testing.T) {
 		ID:          1,
 		Name:        "test",
 		Description: "test",
+		Author: &user.User{
+			ID:         1,
+			Fullname:   "Rasulov-Emirlan",
+			Email:      "go@gmail.com",
+			Hash:       "$2a$04$Wjv8rtuvD9zBzjnKYA88Auv5eoDWc1REy6G7ZRXxrRXK0P5QCja/C",
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+			VerifiedAt: time.Now(),
+		},
 	}
 
 	nullIDInput := defaultInput
