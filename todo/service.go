@@ -3,6 +3,8 @@ package todo
 import (
 	"context"
 	"errors"
+
+	"github.com/sea-auca/clean-todo/user"
 )
 
 // error bellow are specific only to
@@ -37,6 +39,9 @@ func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	}
 	if err := todo.IsValid(); err != nil {
 		return nil, err
+	}
+	if !user.IsValidUser(todo.Author) {
+		return nil, ErrInvalidAuthor
 	}
 	// TODO: check for userID
 	return s.repo.Create(ctx, todo)
