@@ -3,6 +3,8 @@ package todo
 import (
 	"errors"
 	"time"
+
+	"github.com/sea-auca/clean-todo/user"
 )
 
 // Errors for package todo
@@ -19,6 +21,8 @@ var (
 
 	ErrIncorrectUpdatedAt = errors.New("updatedAt is before createdAt")
 	ErrIncorrectDueTo     = errors.New("dueTo is before createdAt")
+
+	ErrInvalidAuthor = errors.New("something is wrong with authors data")
 )
 
 type Todo struct {
@@ -29,8 +33,11 @@ type Todo struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 	DueTo       time.Time `json:"DueTo"`
 	IsDone      bool      `json:"IsDone"`
-	// TODO: Todo needs a field for User
-	// User
+
+	// Author might store very
+	// sensetive info so
+	// don play with json tags for Author
+	Author *user.User `json:"-"`
 }
 
 func NewTodo() Todo {
