@@ -3,6 +3,7 @@ package todo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/sea-auca/clean-todo/user"
 )
@@ -16,11 +17,12 @@ var (
 )
 
 type Service interface {
-	Create(ctx context.Context, todo *Todo) (*Todo, error)
-	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
-	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
+	Create(ctx context.Context, name, description string, dueTo time.Time, author user.User) (*Todo, error)
 	Update(ctx context.Context, todo *Todo) (*Todo, error)
 	Delete(ctx context.Context, todo *Todo) error
+
+	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
+	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
 }
 
 type service struct {
@@ -33,10 +35,8 @@ func NewService(repo Repository) Service {
 	}
 }
 
-func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
-	if todo.ID < 1 {
-		return nil, ErrNegativeID
-	}
+func (s *service) Create(ctx context.Context, name, description string, dueTo time.Time, author user.User) (*Todo, error) {
+	todo := NewTodo(name, description, dueTo, author)
 	if err := todo.IsValid(); err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (s *service) Create(ctx context.Context, todo *Todo) (*Todo, error) {
 	if !user.IsValidUser(todo.Author) {
 		return nil, ErrInvalidAuthor
 	}
-	return s.repo.Create(ctx, todo)
+	return s.repo.Create(ctx, &todo)
 }
 
 func (s *service) ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error) {

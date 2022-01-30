@@ -23,9 +23,9 @@ var bg = context.Background()
 
 func TestCreate(t *testing.T) {
 	defaultInput := todo.Todo{
-		ID:          1,
 		Name:        "test",
 		Description: "test",
+		DueTo:       time.Date(2050, 12, 1, 1, 1, 1, 1, time.Now().Location()),
 		Author: &user.User{
 			ID:         1,
 			Fullname:   "Rasulov-Emirlan",
@@ -36,9 +36,6 @@ func TestCreate(t *testing.T) {
 			VerifiedAt: time.Now(),
 		},
 	}
-
-	nullIDInput := defaultInput
-	nullIDInput.ID = 0
 
 	emptyNameInput := defaultInput
 	emptyNameInput.Name = ""
@@ -62,14 +59,6 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		{
-			desc:  "null todo.ID",
-			input: &nullIDInput,
-			wantedResult: wantedResult{
-				err:   todo.ErrNegativeID,
-				isnil: true,
-			},
-		},
-		{
 			desc:  "empty name",
 			input: &emptyNameInput,
 			wantedResult: wantedResult{
@@ -88,7 +77,10 @@ func TestCreate(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			todos, err := todoService.Create(
 				bg,
-				tC.input,
+				tC.input.Name,
+				tC.input.Description,
+				tC.input.DueTo,
+				*tC.input.Author,
 			)
 
 			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
