@@ -40,8 +40,16 @@ type Todo struct {
 	Author *user.User `json:"-"`
 }
 
-func NewTodo() Todo {
-	return Todo{}
+func NewTodo(name, description string, dueTo time.Time, author user.User) Todo {
+	return Todo{
+		Name:        name,
+		Description: description,
+		DueTo:       dueTo,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		IsDone:      false,
+		Author:      &author,
+	}
 }
 
 func (t *Todo) IsValid() error {
