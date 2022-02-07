@@ -18,7 +18,7 @@ var (
 
 type Service interface {
 	Create(ctx context.Context, name, description string, dueTo time.Time, author user.User) (*Todo, error)
-	Update(ctx context.Context, todo *Todo) (*Todo, error)
+	Update(ctx context.Context, todo *Todo) error
 	Delete(ctx context.Context, todo *Todo) error
 
 	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
@@ -78,15 +78,15 @@ func (s *service) SearchByText(ctx context.Context, text string, userID int64, l
 	return s.repo.SearchByText(ctx, text, userID, limit, offset)
 }
 
-func (s *service) Update(ctx context.Context, todo *Todo) (*Todo, error) {
+func (s *service) Update(ctx context.Context, todo *Todo) error {
 	if todo.ID < 1 {
-		return nil, ErrNegativeID
+		return ErrNegativeID
 	}
 	if todo.Name == "" {
-		return nil, ErrEmptyName
+		return ErrEmptyName
 	}
 	if todo.Description == "" {
-		return nil, ErrEmptyDescription
+		return ErrEmptyDescription
 	}
 	return s.repo.Update(ctx, todo)
 }

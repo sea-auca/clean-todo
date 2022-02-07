@@ -402,19 +402,12 @@ func TestUpdate(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			todos, err := todoService.Update(
+			err := todoService.Update(
 				bg,
 				tC.input,
 			)
 
 			assert.Equalf(t, tC.wantedResult.err, err, "Expected a different error")
-			if tC.wantedResult.isnil {
-				assert.Nilf(t, todos, "Expected todos to be nil")
-				return
-			}
-			if !tC.wantedResult.isnil {
-				assert.NotNilf(t, todos, "Epected todos not to be nil")
-			}
 		})
 	}
 }
