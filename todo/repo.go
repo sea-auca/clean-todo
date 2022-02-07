@@ -9,11 +9,11 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, todo *Todo) (*Todo, error)
+	Create(ctx context.Context, to *Todo) (*Todo, error)
 	ListByUserID(ctx context.Context, userID int64, limit, offset int) ([]*Todo, error)
 	SearchByText(ctx context.Context, text string, userID int64, limit, offset int) ([]*Todo, error)
-	Update(ctx context.Context, todo *Todo) (*Todo, error)
-	Delete(ctx context.Context, todo *Todo) error
+	Update(ctx context.Context, to *Todo) error
+	Delete(ctx context.Context, to *Todo) error
 }
 
 type repository struct {
@@ -103,9 +103,9 @@ func (r *repository) SearchByText(ctx context.Context, text string, userID int64
 	SELECT id, name, description, due_to, is_done, created_at, updated_at
 	FROM todos
 	WHERE user_id = $1
-	AND to_tsvector('english', $2) @@ to_tsquery('english', $3)
-	LIMIT $4 OFFSET $5;
-	`, userID, text, text, limit, offset)
+	AND to_tsvector(name || ' ' || description) @@ to_tsquery($2)
+	LIMIT $3 OFFSET $4;
+	`, userID, text, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -144,22 +144,13 @@ func (r *repository) SearchByText(ctx context.Context, text string, userID int64
 	return todos, nil
 }
 
-func (r *repository) Update(ctx context.Context, todo *Todo) (*Todo, error) {
-	var newTodo Todo
-	err := r.r.QueryRow(ctx, `
+func (r *repository) Update(ctx context.Context, todo *Todo) error {
+	_, err := r.r.Query(ctx, `
 	UPDATE todos
 	SET name=$1, description=$2, due_to=$3, is_done=$4, created_at=$5, updated_at=$6
 	WHERE id = $7;
-	`, todo.Name, todo.Description, todo.DueTo, todo.IsDone, todo.CreatedAt, todo.UpdatedAt).Scan(
-		&newTodo.Name,
-		&newTodo.Description,
-		&newTodo.DueTo,
-		&newTodo.IsDone,
-		&newTodo.CreatedAt,
-		&newTodo.UpdatedAt,
-	)
-	newTodo.Author = todo.Author
-	return &newTodo, err
+	`, todo.Name, todo.Description, todo.DueTo, todo.IsDone, todo.CreatedAt, todo.UpdatedAt)
+	return err
 }
 
 func (r *repository) Delete(ctx context.Context, todo *Todo) error {
